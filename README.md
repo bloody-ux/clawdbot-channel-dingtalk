@@ -1,4 +1,4 @@
-# DingTalk Channel for Clawdbot
+# DingTalk Channel for OpenClaw 
 
 钉钉企业内部机器人 Channel 插件，使用 Stream 模式（无需公网 IP）。
 
@@ -16,10 +16,10 @@
 
 ### 方法 A：通过远程仓库安装 (推荐)
 
-直接运行 Clawdbot 插件安装命令，Clawdbot 会自动处理下载、安装依赖和注册：
+直接运行 openclaw 插件安装命令，openclaw 会自动处理下载、安装依赖和注册：
 
 ```bash
-clawdbot plugins install https://github.com/soimy/clawdbot-channel-dingtalk.git
+openclaw plugins install https://github.com/soimy/clawdbot-channel-dingtalk.git
 ```
 
 ### 方法 B：通过本地源码安装
@@ -28,21 +28,21 @@ clawdbot plugins install https://github.com/soimy/clawdbot-channel-dingtalk.git
 
 ```bash
 # 1. 克隆仓库
-git clone https://github.com/soimy/clawdbot-channel-dingtalk.git
-cd clawdbot-channel-dingtalk
+git clone https://github.com/soimy/openclaw-channel-dingtalk.git
+cd openclaw-channel-dingtalk
 
 # 2. 安装依赖 (必需)
 npm install
 
 # 3. 以链接模式安装 (方便修改代码后实时生效)
-clawdbot plugins install -l .
+openclaw plugins install -l .
 ```
 
 ### 方法 C：手动安装
 
-1. 将本目录下载或复制到 `~/.clawdbot/extensions/dingtalk`。
-2. 确保包含 `index.ts`, `clawdbot.plugin.json` 和 `package.json`。
-3. 运行 `clawdbot plugins list` 确认 `dingtalk` 已显示在列表中。
+1. 将本目录下载或复制到 `~/.openclaw/extensions/dingtalk`。
+2. 确保包含 `index.ts`, `openclaw.plugin.json` 和 `package.json`。
+3. 运行 `openclaw plugins list` 确认 `dingtalk` 已显示在列表中。
 
 ## 配置
 
@@ -54,7 +54,46 @@ clawdbot plugins install -l .
 4. 配置消息接收模式为 **Stream 模式**
 5. 发布应用
 
-### 2. 获取凭证
+### 2. 配置权限管理
+
+在应用的权限管理页面，需要开启以下权限：
+
+- ✅ **Card.Instance.Write** — 创建和投放卡片实例
+- ✅ **Card.Streaming.Write** — 对卡片进行流式更新
+
+**步骤：**
+1. 进入应用 → 权限管理
+2. 搜索「Card」相关权限
+3. 勾选上述两个权限
+4. 保存权限配置
+
+### 3. 建立卡片模板
+
+如需使用 AI 互动卡片功能，需要在钉钉卡片平台创建模板：
+
+**步骤：**
+1. 访问 [钉钉卡片平台](https://open.dingtalk.com/document/development/card)
+2. 进入「我的模板」
+3. 点击「创建模板」
+4. 卡片模板场景选择 **「AI 卡片」**
+5. **无需选择预设模板**，直接点击保存
+6. 复制模板 ID（格式如：`xxxxx-xxxxx-xxxxx.schema`）
+7. 将 templateId 配置到 `openclaw.json` 的 `cardTemplateId` 字段
+8. 或在OpenClaw控制台的Channel标签->Dingtalk配置面板-> Card Template Id填入
+
+**模板配置示例：**
+```json5
+{
+  "channels": {
+    "dingtalk": {
+      "messageType": "card",
+      "cardTemplateId": "你复制的模板ID" // 粘贴复制的模板 ID
+    }
+  }
+}
+```
+
+### 4. 获取凭证
 
 从开发者后台获取：
 
@@ -64,36 +103,38 @@ clawdbot plugins install -l .
 - **Corp ID** (企业 ID)
 - **Agent ID** (应用 ID)
 
-### 3. 配置 Clawdbot
+### 5. 配置 OpenClaw
 
-在 `~/.clawdbot/clawdbot.json` 的 `channels` 下添加：
+在 `~/.openclaw/openclaw.json` 的 `channels` 下添加：
+> 只添加dingtalk部分，内容自己替换
 
 ```json5
 {
-  channels: {
-    dingtalk: {
-      enabled: true,
-      clientId: 'dingxxxxxx',
-      clientSecret: 'your-app-secret',
-      robotCode: 'dingxxxxxx',
-      corpId: 'dingxxxxxx',
-      agentId: '123456789',
-      dmPolicy: 'open', // open | pairing | allowlist
-      groupPolicy: 'open', // open | allowlist
-      messageType: 'markdown', // text | markdown | card
-      cardTemplateId: 'StandardCard', // 互动卡片模板 ID
-      cardSendApiUrl: 'https://api.dingtalk.com/v1.0/im/v1.0/robot/interactiveCards/send', // 可选：自定义发送卡片API
-      cardUpdateApiUrl: 'https://api.dingtalk.com/v1.0/im/robots/interactiveCards', // 可选：自定义更新卡片API
-      debug: false,
-    },
+  ...
+  "channels": {
+    "telegram": { ... },
+
+    "dingtalk": {
+      "enabled": true,
+      "clientId": "dingxxxxxx",
+      "clientSecret": "your-app-secret",
+      "robotCode": "dingxxxxxx",
+      "corpId": "dingxxxxxx",
+      "agentId": "123456789",
+      "dmPolicy": "open",
+      "groupPolicy": "open",      
+      "messageType": "markdown",       
+      "debug": false
+    }
   },
+  ...
 }
 ```
 
-### 4. 重启 Gateway
+### 6. 重启 Gateway
 
 ```bash
-clawdbot gateway restart
+openclaw gateway restart
 ```
 
 ## 配置选项
@@ -109,10 +150,8 @@ clawdbot gateway restart
 | `dmPolicy`         | string   | `"open"`                                                        | 私聊策略：open/pairing/allowlist          |
 | `groupPolicy`      | string   | `"open"`                                                        | 群聊策略：open/allowlist                  |
 | `allowFrom`        | string[] | `[]`                                                            | 允许的发送者 ID 列表                      |
-| `messageType`      | string   | `"markdown"`                                                    | 消息类型：text/markdown/card              |
-| `cardTemplateId`   | string   | `"StandardCard"`                                                | 互动卡片模板 ID（仅当 messageType=card）  |
-| `cardSendApiUrl`   | string   | `"https://api.dingtalk.com/v1.0/im/v1.0/robot/interactiveCards/send"` | 自定义卡片发送 API URL（可选）            |
-| `cardUpdateApiUrl` | string   | `"https://api.dingtalk.com/v1.0/im/robots/interactiveCards"`   | 自定义卡片更新 API URL（可选）            |
+| `messageType`      | string   | `"markdown"`                                                    | 消息类型：markdown/card                   |
+| `cardTemplateId`   | string   | `"382e4302-551d-4880-bf29-a30acfab2e71.schema"`                 | AI 互动卡片模板 ID（仅当 messageType=card）|
 | `debug`            | boolean  | `false`                                                         | 是否开启调试日志                          |
 
 ## 安全策略
@@ -150,43 +189,74 @@ clawdbot gateway restart
 | 互动卡片     | ✅   | 支持流式更新，适用于 AI 实时输出           |
 | 图片         | ⏳   | 需要通过媒体上传 API                       |
 
+## API 消耗说明
+
+### Text/Markdown 模式
+
+| 操作     | API 调用次数 | 说明 |
+|---------|-----------|------|
+| 获取 Token | 1 | 共享/缓存（60 秒检查过期一次） |
+| 发送消息 | 1 | 使用 `/v1.0/robot/oToMessages/batchSend` 或 `/v1.0/robot/groupMessages/send` |
+| **总计** | **2** | 每条回复 1 次 |
+
+### Card（AI 互动卡片）模式
+
+| 阶段 | API 调用 | 说明 |
+|-----|---------|------|
+| **创建卡片** | 1 | `POST /v1.0/card/instances/createAndDeliver` |
+| **流式更新** | M | M = 回复块数量，每块一次 `PUT /v1.0/card/streaming` |
+| **完成卡片** | 包含在最后一次流更新中 | 使用 `isFinalize=true` 标记 |
+| **总计** | **1 + M** | M = Agent 产生的回复块数 |
+
+### 典型场景成本对比
+
+| 场景 | Text/Markdown | Card | 节省 |
+|-----|--------------|------|------|
+| 简短回复（1 块） | 2 | 2 | ✓ 相同 |
+| 中等回复（5 块） | 6 | 6 | ✓ 相同 |
+| 长回复（10 块） | 12 | 11 | ✓ 1 次 |
+
+### 优化策略
+
+**降低 API 调用的方法：**
+
+1. **合并回复块** — 通过调整 Agent 输出配置，减少块数量
+2. **使用缓存** — Token 自动缓存（60 秒），无需每次都获取
+3. **Buffer 模式** — 使用 `dispatchReplyWithBufferedBlockDispatcher` 合并多个小块
+
+**成本建议：**
+
+- ✅ **推荐** — Card 模式：流式体验更好，成本与 Text/Markdown 相当或更低
+- ⚠️ **谨慎** — 频繁调用需要监测配额，建议使用钉钉开发者后台查看 API 调用量
+
 ## 消息类型选择
 
-插件支持三种消息回复类型，可通过 `messageType` 配置：
+插件支持两种消息回复类型，可通过 `messageType` 配置：
 
-### 1. text（纯文本）
-- 基础文本消息
-- 适用于简单回复
-- 无格式化支持
-
-### 2. markdown（Markdown 格式）**【默认】**
+### 1. markdown（Markdown 格式）**【默认】**
 - 支持富文本格式（标题、粗体、列表等）
 - 自动检测消息是否包含 Markdown 语法
 - 适用于大多数场景
 
-### 3. card（互动卡片）**【推荐用于 AI 对话】**
+### 2. card（AI 互动卡片）
 - 支持流式更新（实时显示 AI 生成内容）
-- 更好的视觉呈现
-- 支持自定义卡片模板
-- 通过 `cardTemplateId` 指定模板（默认：`StandardCard`）
+- 更好的视觉呈现和交互体验
+- 支持 Markdown 格式渲染
+- 通过 `cardTemplateId` 指定模板
+- **适用于 AI 对话场景**
 
-**流式更新示例：**
-当配置 `messageType: 'card'` 时，机器人会：
-1. 发送初始卡片显示"正在思考中..."
-2. AI 生成回复时，实时更新卡片内容
-3. 用户可以看到回复逐步生成的过程
+**AI Card API 特性：**
+当配置 `messageType: 'card'` 时：
+1. 使用 `/v1.0/card/instances/createAndDeliver` 创建并投放卡片
+2. 使用 `/v1.0/card/streaming` 实现真正的流式更新
+3. 自动状态管理（PROCESSING → INPUTING → FINISHED）
+4. 更稳定的流式体验，无需手动节流
 
-**流式更新优化：**
-- 自动节流：最小 500ms 更新间隔，避免 API 限流
-- 超时检测：3 秒无更新自动视为完成
-- 错误处理：遇到 404/410 错误自动清理缓存
-- 支持 Markdown：卡片内容自动支持 Markdown 格式
-
+**配置示例：**
 ```json5
 {
-  messageType: 'card', // 启用互动卡片模式
-  cardTemplateId: 'StandardCard', // 使用标准卡片模板
-  cardSendApiUrl: 'https://api.dingtalk.com/...', // 可选：自定义 API
+  messageType: 'card', // 启用 AI 互动卡片模式
+  cardTemplateId: '382e4302-551d-4880-bf29-a30acfab2e71.schema', // AI 卡片模板 ID（默认值）
 }
 ```
 
@@ -203,7 +273,7 @@ clawdbot gateway restart
 
 1. 确认应用已发布
 2. 确认消息接收模式是 Stream
-3. 检查 Gateway 日志：`clawdbot logs | grep dingtalk`
+3. 检查 Gateway 日志：`openclaw logs | grep dingtalk`
 
 ### 群消息无响应
 
@@ -223,8 +293,8 @@ clawdbot gateway restart
 1. 克隆仓库并安装依赖
 
 ```bash
-git clone https://github.com/soimy/clawdbot-channel-dingtalk.git
-cd clawdbot-channel-dingtalk
+git clone https://github.com/soimy/openclaw-channel-dingtalk.git
+cd openclaw-channel-dingtalk
 npm install
 ```
 
@@ -254,7 +324,7 @@ src/
 index.ts              - 插件注册（29 行）
 utils.ts              - 工具函数（110 行）
 
-clawdbot.plugin.json  - 插件配置
+openclaw.plugin.json  - 插件配置
 package.json          - 项目配置
 README.md             - 本文件
 ```
@@ -279,11 +349,11 @@ DingTalkInboundMessage; // 收到的钉钉消息
 MessageContent; // 解析后的消息内容
 HandleDingTalkMessageParams; // 消息处理参数
 
-// 互动卡片
-InteractiveCardData; // 卡片数据结构
-InteractiveCardSendRequest; // 发送卡片请求
-InteractiveCardUpdateRequest; // 更新卡片请求
-CardInstance; // 卡片实例（用于缓存）
+// AI 互动卡片
+AICardInstance; // AI 卡片实例
+AICardCreateAndDeliverRequest; // 创建并投放卡片请求
+AICardStreamingRequest; // 流式更新请求
+AICardStatus; // 卡片状态常量
 
 // 工具函数类型
 Logger; // 日志接口
@@ -298,14 +368,14 @@ MediaFile; // 下载的媒体文件
 ```typescript
 // 文本/Markdown 消息
 sendBySession(config, sessionWebhook, text, options); // 通过会话发送
-sendProactiveMessage(config, target, text, options); // 主动发送消息
 
-// 互动卡片（流式更新）
-sendInteractiveCard(config, conversationId, text, options); // 发送卡片
-updateInteractiveCard(config, cardBizId, text, options); // 更新卡片
+// AI 互动卡片
+createAICard(config, conversationId, data, log); // 创建并投放 AI 卡片
+streamAICard(card, content, finished, log); // 流式更新卡片内容
+finishAICard(card, content, log); // 完成并关闭卡片
 
 // 自动模式选择
-sendMessage(config, conversationId, text, options); // 根据配置自动选择
+sendMessage(config, conversationId, text, options); // 根据配置自动选择（含卡片/文本回退）
 
 // 认证
 getAccessToken(config, log); // 获取访问令牌
@@ -314,17 +384,18 @@ getAccessToken(config, log); // 获取访问令牌
 **使用示例：**
 
 ```typescript
-import { sendInteractiveCard, updateInteractiveCard } from './src/channel';
+import { createAICard, streamAICard, finishAICard } from './src/channel';
 
-// 发送初始卡片
-const { cardBizId } = await sendInteractiveCard(config, conversationId, '正在生成...', {
-  log,
-});
+// 创建 AI 卡片
+const card = await createAICard(config, conversationId, messageData, log);
 
-// 流式更新卡片内容
+// 流式更新内容
 for (const chunk of aiResponseChunks) {
-  await updateInteractiveCard(config, cardBizId, currentText + chunk, { log });
+  await streamAICard(card, currentText + chunk, false, log);
 }
+
+// 完成并关闭卡片
+await finishAICard(card, finalText, log);
 ```
 
 ### 架构

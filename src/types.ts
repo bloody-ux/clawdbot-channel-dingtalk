@@ -9,12 +9,12 @@
  * - Session and token management
  */
 
-import type { ClawdbotConfig } from 'clawdbot/plugin-sdk';
+import type { OpenClawConfig } from 'openclaw/plugin-sdk';
 
 /**
- * DingTalk channel configuration (extends base Clawdbot config)
+ * DingTalk channel configuration (extends base OpenClaw config)
  */
-export interface DingTalkConfig extends ClawdbotConfig {
+export interface DingTalkConfig extends OpenClawConfig {
   clientId: string;
   clientSecret: string;
   robotCode?: string;
@@ -27,10 +27,8 @@ export interface DingTalkConfig extends ClawdbotConfig {
   allowFrom?: string[];
   showThinking?: boolean;
   debug?: boolean;
-  messageType?: 'text' | 'markdown' | 'card';
+  messageType?: 'markdown' | 'card';
   cardTemplateId?: string;
-  cardSendApiUrl?: string;
-  cardUpdateApiUrl?: string;
   accounts?: Record<string, DingTalkConfig>;
 }
 
@@ -49,10 +47,8 @@ export interface DingTalkChannelConfig {
   allowFrom?: string[];
   showThinking?: boolean;
   debug?: boolean;
-  messageType?: 'text' | 'markdown' | 'card';
+  messageType?: 'markdown' | 'card';
   cardTemplateId?: string;
-  cardSendApiUrl?: string;
-  cardUpdateApiUrl?: string;
   accounts?: Record<string, DingTalkConfig>;
 }
 
@@ -170,7 +166,7 @@ export interface SessionWebhookResponse {
  * Message handler parameters
  */
 export interface HandleDingTalkMessageParams {
-  cfg: ClawdbotConfig;
+  cfg: OpenClawConfig;
   accountId: string;
   data: DingTalkInboundMessage;
   sessionWebhook: string;
@@ -281,7 +277,7 @@ export interface Logger {
  */
 export interface GatewayStartContext {
   account: ResolvedAccount;
-  cfg: ClawdbotConfig;
+  cfg: OpenClawConfig;
   abortSignal?: AbortSignal;
   log?: Logger;
 }
@@ -318,8 +314,8 @@ export interface DingTalkChannelPlugin {
     configPrefixes: string[];
   };
   config: {
-    listAccountIds: (cfg: ClawdbotConfig) => string[];
-    resolveAccount: (cfg: ClawdbotConfig, accountId?: string) => ResolvedAccount;
+    listAccountIds: (cfg: OpenClawConfig) => string[];
+    resolveAccount: (cfg: OpenClawConfig, accountId?: string) => ResolvedAccount;
     defaultAccountId: () => string;
     isConfigured: (account: any) => boolean;
     describeAccount: (account: any) => AccountDescriptor;
@@ -407,72 +403,90 @@ export interface DingTalkOutboundHandler {
 }
 
 /**
- * Interactive card data structure
+ * AI Card status constants
  */
-export interface InteractiveCardData {
-  config?: {
-    autoLayout?: boolean;
-    enableForward?: boolean;
-  };
-  header?: {
-    title: {
-      type: string;
-      text: string;
-    };
-    logo?: string;
-  };
-  contents?: Array<{
-    type: string;
-    text?: string;
-    [key: string]: any;
-  }>;
-  [key: string]: any;
-}
+export const AICardStatus = {
+  PROCESSING: '1',
+  INPUTING: '2',
+  FINISHED: '3',
+  FAILED: '5',
+} as const;
 
 /**
- * Interactive card send request payload
+ * AI Card state type
  */
-export interface InteractiveCardSendRequest {
-  cardTemplateId: string;
-  cardBizId: string;
-  robotCode: string;
-  openConversationId?: string;
-  singleChatReceiver?: string;
-  cardData: string;
-  callbackUrl?: string;
-  userIdPrivateDataMap?: string;
-  unionIdPrivateDataMap?: string;
-}
+export type AICardState = typeof AICardStatus[keyof typeof AICardStatus];
 
 /**
- * Interactive card update request payload
+ * AI Card instance
  */
-export interface InteractiveCardUpdateRequest {
-  cardBizId: string;
-  cardData: string;
-  userIdPrivateDataMap?: string;
-  unionIdPrivateDataMap?: string;
-  updateOptions?: {
-    updateCardDataByKey?: boolean;
-    updatePrivateDataByKey?: boolean;
-  };
-}
-
-/**
- * Interactive card response
- */
-export interface InteractiveCardResponse {
-  result?: boolean;
-  success?: boolean;
-  processQueryKey?: string;
-}
-
-/**
- * Card instance tracking info for streaming updates
- */
-export interface CardInstance {
-  cardBizId: string;
+export interface AICardInstance {
+  cardInstanceId: string;
+  accessToken: string;
   conversationId: string;
   createdAt: number;
   lastUpdated: number;
+  state: AICardState; // Current card state: PROCESSING, INPUTING, FINISHED, FAILED
+  config?: DingTalkConfig; // Store config reference for token refresh
+}
+
+/**
+ * AI Card create request (new API)
+ */
+export interface AICardCreateRequest {
+  cardTemplateId: string;
+  outTrackId: string;
+  cardData: {
+    cardParamMap: Record<string, any>;
+  };
+  callbackType?: string;
+  imGroupOpenSpaceModel?: {
+    supportForward: boolean;
+  };
+  imRobotOpenSpaceModel?: {
+    supportForward: boolean;
+  };
+}
+
+/**
+ * AI Card deliver request (new API)
+ */
+export interface AICardDeliverRequest {
+  outTrackId: string;
+  userIdType: number;
+  openSpaceId?: string;
+  imGroupOpenDeliverModel?: {
+    robotCode: string;
+  };
+  imRobotOpenDeliverModel?: {
+    spaceType: string;
+  };
+}
+
+/**
+ * AI Card update request (new API)
+ */
+export interface AICardUpdateRequest {
+  outTrackId: string;
+  cardData: {
+    cardParamMap: {
+      flowStatus: string;
+      msgContent: string;
+      staticMsgContent?: string;
+      sys_full_json_obj?: string;
+    };
+  };
+}
+
+/**
+ * AI Card streaming update request (new API)
+ */
+export interface AICardStreamingRequest {
+  outTrackId: string;
+  guid: string;
+  key: string;
+  content: string;
+  isFull: boolean;
+  isFinalize: boolean;
+  isError: boolean;
 }
